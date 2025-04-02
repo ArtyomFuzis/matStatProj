@@ -21,7 +21,8 @@ class MainWindow:
 
     def file_menu_open(self):
         ow = OpenWindow()
-        ow.show()
+        res = ow.show()
+        print(res)
 
     def show(self):
         self.window.mainloop()
