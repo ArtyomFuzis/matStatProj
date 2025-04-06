@@ -51,7 +51,7 @@ class OpenWindow:
         self.df = None
         self.filepath = None
         self.window = tk.Toplevel()
-        self.window.geometry("240x280")
+        self.window.geometry("440x480")
         self.window.resizable(False, False)
         self.window.title("Открыть")
         validate_spin = self.window.register(validate_spinbox)
