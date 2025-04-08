@@ -1,7 +1,8 @@
-# Python
+# python
 import tkinter as tk
 from tkinter import ttk
 import pandas as pd
+
 
 class ModelVariablesWindow:
     def __init__(self, parent, data):
@@ -11,11 +12,12 @@ class ModelVariablesWindow:
         self.window.geometry("600x400")
         self.window.title("Формирование модельных переменных")
 
-        self.selection_mode = tk.StringVar(value="column")
+        # DataFrame для накопления результатов
+        self.accumulated_results = None
 
-        self.row_radio = ttk.Radiobutton(self.window, text="По строкам", variable=self.selection_mode, value="row")
-        self.row_radio.pack(anchor=tk.W, padx=10, pady=5)
-        self.column_radio = ttk.Radiobutton(self.window, text="По столбцам", variable=self.selection_mode, value="column")
+        self.selection_mode = tk.StringVar(value="column")
+        self.column_radio = ttk.Radiobutton(self.window, text="По столбцам", variable=self.selection_mode,
+                                            value="column")
         self.column_radio.pack(anchor=tk.W, padx=10, pady=5)
 
         self.var_listbox = tk.Listbox(self.window, selectmode=tk.MULTIPLE)
@@ -33,15 +35,16 @@ class ModelVariablesWindow:
 
         self.add_coeff_inputs()
 
-        # Кнопка для добавления новых переменных
         self.add_btn = ttk.Button(self.window, text="Добавить переменную", command=self.add_coeff_inputs)
         self.add_btn.pack(pady=5)
-        # Кнопка для удаления последней переменной
         self.remove_btn = ttk.Button(self.window, text="Удалить переменную", command=self.remove_coeff_inputs)
         self.remove_btn.pack(pady=5)
 
         self.calc_btn = ttk.Button(self.window, text="Рассчитать", command=self.calculate_model_variables)
         self.calc_btn.pack(pady=5)
+
+        self.remove_col_btn = ttk.Button(self.window, text="Удалить последний столбец", command=self.remove_result_column)
+        self.remove_col_btn.pack(pady=5)
 
         self.result_text = tk.Text(self.window, height=10)
         self.result_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -57,14 +60,14 @@ class ModelVariablesWindow:
 
     def add_coeff_inputs(self):
         row = len(self.alpha_entries)
-        alpha_label = ttk.Label(self.coeff_frame, text=f"\u03B1_{row+1}:")
+        alpha_label = ttk.Label(self.coeff_frame, text=f"\u03B1_{row + 1}:")
         alpha_label.grid(row=row, column=0, padx=5, pady=5)
         alpha_entry = ttk.Entry(self.coeff_frame)
         alpha_entry.grid(row=row, column=1, padx=5, pady=5)
         self.alpha_labels.append(alpha_label)
         self.alpha_entries.append(alpha_entry)
 
-        beta_label = ttk.Label(self.coeff_frame, text=f"\u03B2_{row+1}:")
+        beta_label = ttk.Label(self.coeff_frame, text=f"\u03B2_{row + 1}:")
         beta_label.grid(row=row, column=2, padx=5, pady=5)
         beta_entry = ttk.Entry(self.coeff_frame)
         beta_entry.grid(row=row, column=3, padx=5, pady=5)
@@ -73,7 +76,6 @@ class ModelVariablesWindow:
 
     def remove_coeff_inputs(self):
         if self.alpha_entries:
-            # Удаляем виджеты последней добавленной строки
             last_alpha_label = self.alpha_labels.pop()
             last_alpha_entry = self.alpha_entries.pop()
             last_beta_label = self.beta_labels.pop()
@@ -93,14 +95,36 @@ class ModelVariablesWindow:
         if self.selection_mode.get() == "column":
             for i, var in enumerate(selected_vars):
                 numeric_data = pd.to_numeric(self.data[var], errors='coerce').dropna()
-                model_vars[f"X_{i+1}"] = alphas[i] * betas[i] * numeric_data
+                model_vars[f"X_{i + 1}"] = alphas[i] * betas[i] * numeric_data
         else:
             for i, var in enumerate(selected_vars):
                 numeric_data = pd.to_numeric(self.data.loc[var], errors='coerce').dropna()
-                model_vars[f"X_{i+1}"] = alphas[i] * betas[i] * numeric_data
+                model_vars[f"X_{i + 1}"] = alphas[i] * betas[i] * numeric_data
 
-        self.result_text.delete(1.0, tk.END)
-        self.result_text.insert(tk.END, model_vars)
+        # Суммирование строк
+        summed = model_vars.sum(axis=1)
+
+        # Формирование нового столбца с именем результата
+        if self.accumulated_results is None:
+            self.accumulated_results = pd.DataFrame({"Результат_1": summed})
+        else:
+            new_col_number = len(self.accumulated_results.columns) + 1
+            self.accumulated_results[f"Результат_{new_col_number}"] = summed
+
+        self.update_result_display()
+
+    def update_result_display(self):
+        self.result_text.delete("1.0", tk.END)
+        self.result_text.insert(tk.END, self.accumulated_results)
+
+    def remove_result_column(self):
+        if self.accumulated_results is not None and not self.accumulated_results.empty:
+            last_col = self.accumulated_results.columns[-1]
+            self.accumulated_results.drop(columns=[last_col], inplace=True)
+            if self.accumulated_results.shape[1] == 0:
+                self.accumulated_results = None
+            self.update_result_display()
+
 
 def open_model_variables_window(parent, data):
     ModelVariablesWindow(parent, data)
