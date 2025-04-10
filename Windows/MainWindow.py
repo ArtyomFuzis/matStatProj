@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 import pandas as pd
+
+from Windows.SystemWindow import SystemWindow
 from Windows.ModelVariablesWindow import ModelVariablesWindow
 from Windows.OpenWindow import OpenWindow
 class MainWindow:
@@ -63,8 +65,14 @@ class MainWindow:
             frame.pack(expand=True, fill=tk.BOTH)
             self.note.add(frame, text="Выборка "+str(key))
             tree = ttk.Treeview(frame)
-            tree.pack(fill=tk.BOTH, expand=True)
+
             df = self.dataframes[key]
+            model_btn = ttk.Button(frame, text="Редактировать модельные переменные",
+                                   command=self.create_edit_model_variables_action(df))
+            model_btn.pack(pady=10)
+            system_btn = ttk.Button(frame, text="Создать систему",
+                                   command=self.create_system(df))
+            system_btn.pack(pady=10)
             tree["columns"] = list(df.columns)
             tree["show"] = "headings"
             for col in df.columns:
@@ -73,6 +81,7 @@ class MainWindow:
             for index, row in df.iterrows():
                 tree.insert("", "end", values=list(row))
             tree.tag_configure('row_height', font=('TkDefaultFont', 14))
+            tree.pack(fill=tk.BOTH, expand=True)
 
     def open_model_variables(self):
         if self.current_df is not None:
@@ -83,6 +92,18 @@ class MainWindow:
             self.load_selections_frames()
         else:
             tk.messagebox.showwarning(message="Сначала загрузите данные", title="Ошибка")
+    def create_edit_model_variables_action(self, df):
+        def edit_model_variables():
+            res = ModelVariablesWindow(self.window, self.current_df, self.frame_ind, df).show()
+            if res is not None and res[1] is not None:
+                self.dataframes[res[0]] = res[1]
+            self.load_selections_frames()
+        return edit_model_variables
 
     def show(self):
         self.window.mainloop()
+
+    def create_system(self, df: pd.DataFrame):
+        def system():
+            SystemWindow(df, self.window).show()
+        return system

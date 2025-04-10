@@ -17,7 +17,7 @@ def validate_koeff(new_value):
     except ValueError:
         return False
 class ModelVariablesWindow:
-    def __init__(self, parent, data, ind):
+    def __init__(self, parent, data, ind, accumulated_results=None):
         self.col_num = 1
         self.ind = ind
         self.tree = None
@@ -27,15 +27,10 @@ class ModelVariablesWindow:
         self.window.geometry("600x400")
         self.window.title("Формирование модельных переменных")
         self.validate_koeff = self.window.register(validate_koeff)
-
-        # DataFrame для накопления результатов
-        self.accumulated_results = None
-
         self.var_listbox = tk.Listbox(self.window, selectmode=tk.MULTIPLE)
         self.var_listbox.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         self.var_listbox.bind('<<ListboxSelect>>', self.onselect)
         self.update_listbox()
-
         self.coeff_frame = tk.Frame(self.window)
         self.coeff_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
@@ -52,6 +47,8 @@ class ModelVariablesWindow:
         self.calc_btn = ttk.Button(self.window, text="Рассчитать", command=self.calculate_model_variables)
         self.calc_btn.pack(pady=5)
         self.selected_fields = []
+        self.accumulated_results = accumulated_results
+        self.update_result_display()
 
     def onselect(self, evt):
         if self.selected_fields != self.var_listbox.curselection():
@@ -151,11 +148,12 @@ class ModelVariablesWindow:
            self.tree['columns'] = self.accumulated_results.columns.tolist()
        else:
            self.tree['columns'] = []
-       for col in self.accumulated_results.columns:
-           self.tree.heading(col, text=col, command=select_var(col))
-           self.tree.column(col, anchor=tk.NW, width=100)
-       for index, row in self.accumulated_results.iterrows():
-           self.tree.insert("", "end", values=list(row))
+       if self.accumulated_results is not None:
+           for col in self.accumulated_results.columns:
+               self.tree.heading(col, text=col, command=select_var(col))
+               self.tree.column(col, anchor=tk.NW, width=100)
+           for index, row in self.accumulated_results.iterrows():
+               self.tree.insert("", "end", values=list(row))
 
     def show(self):
         self.window.wait_window()
