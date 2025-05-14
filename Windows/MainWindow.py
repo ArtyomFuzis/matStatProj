@@ -10,7 +10,7 @@ class MainWindow:
     def __init__(self, preloaded):
         self.window  = tk.Tk()
         self.window.geometry("800x800")
-        self.window.resizable(False, False)
+        self.window.resizable(True, False)
         self.window.title("StatApp")
         self.menu_pane = tk.Menu(self.window)
         self.file_menu = tk.Menu(self.window, tearoff=0)
@@ -84,7 +84,7 @@ class MainWindow:
             tree.pack(fill=tk.BOTH, expand=True)
 
     def open_model_variables(self):
-        if self.current_df is not None:
+        if self.current_df is not None and len(self.current_df) != 0:
             self.frame_ind+=1
             res = ModelVariablesWindow(self.window, self.current_df, self.frame_ind).show()
             if res is not None and res[1] is not None:

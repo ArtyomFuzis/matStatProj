@@ -18,7 +18,7 @@ def validate_koeff(new_value):
         return False
 class ModelVariablesWindow:
     def __init__(self, parent, data, ind, accumulated_results=None):
-        self.col_num = 1
+        self.col_num = 1 if accumulated_results is None else len(accumulated_results.columns)
         self.ind = ind
         self.tree = None
         self.parent = parent
@@ -98,7 +98,7 @@ class ModelVariablesWindow:
 
     def calculate_model_variables(self):
         selected_vars = [i for i in self.var_listbox.curselection()]
-        if selected_vars == []:
+        if not selected_vars:
             showerror("Ошибка", "Не выбрана не одна переменная!")
             self.window.focus_set()
             return
