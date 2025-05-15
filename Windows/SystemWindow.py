@@ -4,6 +4,7 @@ from tkinter import ttk
 from tkinter.messagebox import showerror, showwarning, showinfo
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from Windows.EditColumnWindow import EditColumnWindow
 from utils import calculate_msq
@@ -161,8 +162,9 @@ class SystemWindow:
             if has_lag:
                 YY.index += 1
             reses = []
+            cur_df2 = cur_df
             if has_lag:
-                cur_df = cur_df.iloc[1:]
+                cur_df2 = cur_df.iloc[1:]
                 YY = YY.iloc[1:]
             print("YYYYYYY")
             print(YY)
@@ -174,26 +176,50 @@ class SystemWindow:
                         continue
                     Xlist.append(self.equations[(i, row)])
                     i += 1
-                curX = pd.concat([cur_df[el] if el not in YY.columns else YY[el] for el in Xlist], axis=1)
+                curX = pd.concat([cur_df2[el] if el not in YY.columns else YY[el] for el in Xlist], axis=1)
                 print(curX)
                 print(YY[self.equations[(0, row)]])
                 res = calculate_msq(curX, YY[self.equations[(0, row)]])
                 reses.append((self.equations[(0, row)],res))
             print("-----------------Results:-----------------\n", reses)
-            showinfo("Коэффициенты", "Были получены значения коэффициентов для каждой эндогеннй переменной: "
-                     + "\n".join(reses))
+            showinfo("Коэффициенты", "Были получены значения коэффициентов для каждой эндогенной переменной: "
+                     + "\n".join(map(str,reses)))
 
             reses_right = dict()
-            for el in all_rows:
-                x = [cur_df[el]]
+            for row in self.active_rows:
+                i = 1
+                while (i, row) in self.equations:
+                    if self.equations[(i, row)] == "VAR":
+                        continue
+                    el = self.equations[(i, row)]
+                    v = cur_df[el]
+                    x = pd.DataFrame(np.arange(1, len(v) + 1))
+                    res = calculate_msq(x, v)
+                    xc = pd.DataFrame(np.arange(1, len(v) + 6))
+                    reses_right[el] = pd.Series(np.ravel(np.dot(np.hstack((np.ones((xc.shape[0], 1)), xc)), np.matrix(res).T).T))
+                    i += 1
 
+            for row in self.active_rows:
+                i = 1
+                Xlist = []
+                while (i, row) in self.equations:
+                    if self.equations[(i, row)] == "VAR":
+                        continue
+                    Xlist.append(self.equations[(i, row)])
+                    i += 1
+                x = pd.DataFrame()
+                for el in Xlist:
+                    x[el] = reses_right[el]
 
-            # matrix_X = np.hstack((np.ones((cur_df.shape[0], 1)), np.array(cur_df[list(all_rows)])))
-            # matrix_Y = np.array(cur_df[list(used_var)])
-            # print("-----------------Xs-----------------")
-            # print(matrix_X)
-            # print("-----------------Ys-----------------")
-            # print(matrix_Y)
-            # print("-----------------RESULTS-----------------")
-            # res = np.dot(np.dot(np.linalg.inv(np.dot(matrix_X.T, matrix_X)), matrix_X.T), matrix_Y)
-            # print(res)
+                res = [el[1] for el in reses if el[0] == self.equations[(0, row)]][0]
+                ress = pd.Series(np.ravel(np.dot(np.hstack((np.ones((x.shape[0], 1)), x)), np.matrix(res).T).T))
+                ress.index += 1
+                print("Final res: " + self.equations[(0, row)])
+                print(ress)
+                showinfo("Прогноз для переменной: "+self.equations[(0, row)],
+                         "Были получены значения прогноза для переменной "+self.equations[(0, row)]+": "
+                         + "\n".join(map(str, ress)))
+
+                ress.plot()
+                plt.show()
+                plt.clf()
