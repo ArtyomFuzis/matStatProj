@@ -5,6 +5,5 @@ if __name__ == "__main__":
     #mw = MainWindow(pd.read_excel("test.xlsx", nrows=15, skiprows=0, usecols="A:I"))
     mw = MainWindow(pd.read_excel("test.xlsx", nrows=15, skiprows=23, usecols="X:AB"))
     #mw = MainWindow(pd.DataFrame())
-
     mw.show()
 

@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from Windows.EditColumnWindow import EditColumnWindow
-from utils import calculate_msq
+from utils import calculate_msq, save_into_file
 
 
 class SystemWindow:
@@ -216,10 +216,10 @@ class SystemWindow:
                 ress.index += 1
                 print("Final res: " + self.equations[(0, row)])
                 print(ress)
+                txt = "Были получены значения прогноза для переменной "+self.equations[(0, row)]+": "+"\n".join(map(str, ress))
                 showinfo("Прогноз для переменной: "+self.equations[(0, row)],
-                         "Были получены значения прогноза для переменной "+self.equations[(0, row)]+": "
-                         + "\n".join(map(str, ress)))
-
+                         txt)
+                save_into_file(txt)
                 ress.plot()
                 plt.show()
                 plt.clf()

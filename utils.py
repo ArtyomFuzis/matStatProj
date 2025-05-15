@@ -1,4 +1,5 @@
 import numpy as np
+import uuid
 def shorten_string(string, n):
     if len(string) > n:
         return string[:n-3] + "..."
@@ -17,3 +18,7 @@ def calculate_msq(X, Y):
     return res
 
 
+def save_into_file(data):
+    guid = uuid.uuid4()
+    with open(str(guid)+".txt", mode='w', encoding='utf8') as f:
+        f.write(data)
