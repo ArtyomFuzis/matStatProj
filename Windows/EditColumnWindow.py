@@ -49,7 +49,6 @@ class EditColumnWindow:
         self.window.destroy()
 
     def rename(self):
-        print("called")
         self.df.rename({self.col:self.rename_entry.get()}, axis=1, inplace=True)
         self.window.destroy()
 

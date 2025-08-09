@@ -1,12 +1,12 @@
 # python
 import tkinter as tk
 from tkinter import ttk
-from tkinter.messagebox import showerror, showwarning, showinfo
+from tkinter.messagebox import showwarning, showinfo
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from Windows.EditColumnWindow import EditColumnWindow
+from Windows.SystemParamsShowWindow import SystemParamsShowWindow, AnswerType
 from utils import calculate_msq, save_into_file
 
 
@@ -95,7 +95,7 @@ class SystemWindow:
         used_var = set()
         for act_row in self.active_rows:
             used_var.add(self.equations[(0, act_row)])
-        if (0, 0) not in self.equations or self.equations[(0,0)] == 'VAR':
+        if (0, 0) not in self.equations or self.equations[(0, 0)] == 'VAR':
             showwarning("Ошибка", "Не выбрано ни одно уравнение!")
             self.window.focus_set()
         elif len(used_var) != len(self.active_rows):
@@ -125,10 +125,12 @@ class SystemWindow:
                     i += 1
             print(self.equations)
             print(all_rows)
+
+            params_for_rows = {}
             for row in self.active_rows:
                 i = 1
-                H = 1
-                D = len(all_rows)
+                H = 1 # в начале строки точно одна эндогенная переменная
+                D = len(all_rows) # общее кол-во экзогенных переменных
                 while (i, row) in self.equations:
                     if self.equations[(i, row)] == "VAR":
                         pass
@@ -137,11 +139,19 @@ class SystemWindow:
                     else:
                         H += 1
                     i += 1
-                print("H: ", H," D: ", D)
-                if H > D + 1:
-                    showwarning("Ошибка", f"В строке {row + 1} неидентифицируемое уравнение")
-                    self.window.focus_set()
-                    return
+                print("H: ", H, " D: ", D)
+                params_for_rows[row+1] = (D,H)
+
+            res = SystemParamsShowWindow(self.window, params_for_rows, len(all_rows), len(used_var)).show()
+            if res == AnswerType.Return:
+                return
+
+                # if H > D + 1:
+                #     showwarning("Ошибка", f"В строке {row + 1} неидентифицируемое уравнение")
+                #     self.window.focus_set()
+                #     return
+
+
             df_shifted = pd.DataFrame()
             for col in self.df.columns:
                 df_shifted["@" + col] = self.df[[col]].shift(1)
@@ -149,6 +159,7 @@ class SystemWindow:
             if has_lag:
                 cur_df = cur_df.iloc[1:]
             print("-----------------cur_df-----------------\n", cur_df)
+
             X = cur_df[list(all_rows)]
             newY = pd.DataFrame()
             for el in list(used_var):
@@ -180,10 +191,10 @@ class SystemWindow:
                 print(curX)
                 print(YY[self.equations[(0, row)]])
                 res = calculate_msq(curX, YY[self.equations[(0, row)]])
-                reses.append((self.equations[(0, row)],res))
+                reses.append((self.equations[(0, row)], res))
             print("-----------------Results:-----------------\n", reses)
             showinfo("Коэффициенты", "Были получены значения коэффициентов для каждой эндогенной переменной: "
-                     + "\n".join(map(str,reses)))
+                     + "\n".join(map(str, reses)))
 
             reses_right = dict()
             for row in self.active_rows:
@@ -196,7 +207,8 @@ class SystemWindow:
                     x = pd.DataFrame(np.arange(1, len(v) + 1))
                     res = calculate_msq(x, v)
                     xc = pd.DataFrame(np.arange(1, len(v) + 6))
-                    reses_right[el] = pd.Series(np.ravel(np.dot(np.hstack((np.ones((xc.shape[0], 1)), xc)), np.matrix(res).T).T))
+                    reses_right[el] = pd.Series(
+                        np.ravel(np.dot(np.hstack((np.ones((xc.shape[0], 1)), xc)), np.matrix(res).T).T))
                     i += 1
 
             for row in self.active_rows:
@@ -216,10 +228,12 @@ class SystemWindow:
                 ress.index += 1
                 print("Final res: " + self.equations[(0, row)])
                 print(ress)
-                txt = "Были получены значения прогноза для переменной "+self.equations[(0, row)]+": "+"\n".join(map(str, ress))
-                showinfo("Прогноз для переменной: "+self.equations[(0, row)],
+                txt = "Были получены значения прогноза для переменной " + self.equations[(0, row)] + ": " + "\n".join(
+                    map(str, ress))
+                showinfo("Прогноз для переменной: " + self.equations[(0, row)],
                          txt)
                 save_into_file(txt)
                 ress.plot()
                 plt.show()
                 plt.clf()
+
