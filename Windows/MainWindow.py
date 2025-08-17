@@ -94,9 +94,9 @@ class MainWindow:
             tk.messagebox.showwarning(message="Сначала загрузите данные", title="Ошибка")
     def create_edit_model_variables_action(self, df):
         def edit_model_variables():
-            res = ModelVariablesWindow(self.window, self.current_df, self.frame_ind, df).show()
-            if res is not None and res[1] is not None:
-                self.dataframes[res[0]] = res[1]
+            ModelVariablesWindow(self.window, self.current_df, self.frame_ind, df).show()
+            # if res is not None and res[1] is not None:
+            #     self.dataframes[res[0]] = res[1]
             self.load_selections_frames()
         return edit_model_variables
 

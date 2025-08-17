@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from Windows.SystemParamsShowWindow import SystemParamsShowWindow, AnswerType
+from solver import estimate_system
 from utils import calculate_msq, save_into_file
 
 
@@ -179,7 +180,9 @@ class SystemWindow:
             print(z)
             print(masks)
             print(y)
+            equations = [(y[i], z[i],masks[i]) for i in range(n)]
 
+            coefficients = estimate_system(equations, X_matrix, use_log_transform=False)
             # X = cur_df[list(all_rows)]
             # newY = pd.DataFrame()
             # for el in list(used_var):
