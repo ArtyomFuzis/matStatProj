@@ -2,3 +2,4 @@
 **/__pycache__
 *.xlsx
 *.txt
+/test_area

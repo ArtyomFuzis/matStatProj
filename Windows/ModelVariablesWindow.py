@@ -18,7 +18,7 @@ def validate_koeff(new_value):
         return False
 class ModelVariablesWindow:
     def __init__(self, parent, data, ind, accumulated_results=None):
-        self.col_num = 1 if accumulated_results is None else len(accumulated_results.columns)
+        self.col_num = 1 if accumulated_results is None else len(accumulated_results.columns)+1
         self.ind = ind
         self.tree = None
         self.parent = parent
@@ -116,10 +116,11 @@ class ModelVariablesWindow:
 
         # Формирование нового столбца с именем результата
         if self.accumulated_results is None:
-            self.accumulated_results = pd.DataFrame({"X_1": summed})
-        else:
-            self.col_num += 1
-            self.accumulated_results[f"X_{self.col_num}"] = summed
+            self.accumulated_results = pd.DataFrame()
+
+        name = f"X_{self.col_num}" if len(selected_vars) > 1 else self.var_listbox.get(selected_vars[0])
+        self.accumulated_results[name] = summed
+        self.col_num += 1
 
         self.update_result_display()
         self.clear_select()

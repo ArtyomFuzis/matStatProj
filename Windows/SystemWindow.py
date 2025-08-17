@@ -146,12 +146,6 @@ class SystemWindow:
             if res == AnswerType.Return:
                 return
 
-                # if H > D + 1:
-                #     showwarning("Ошибка", f"В строке {row + 1} неидентифицируемое уравнение")
-                #     self.window.focus_set()
-                #     return
-
-
             df_shifted = pd.DataFrame()
             for col in self.df.columns:
                 df_shifted["@" + col] = self.df[[col]].shift(1)
@@ -160,80 +154,106 @@ class SystemWindow:
                 cur_df = cur_df.iloc[1:]
             print("-----------------cur_df-----------------\n", cur_df)
 
-            X = cur_df[list(all_rows)]
-            newY = pd.DataFrame()
-            for el in list(used_var):
-                res = calculate_msq(X, cur_df[el])
-                newY[el] = pd.Series(np.ravel(np.dot(np.hstack((np.ones((X.shape[0], 1)), X)), np.matrix(res).T).T))
+            n = cur_df.shape[0]
 
-            Y_shifted = pd.DataFrame()
-            for col in newY.columns:
-                Y_shifted["@" + col] = newY[[col]].shift(1)
-            YY = pd.concat([newY, Y_shifted], axis=1)
-            if has_lag:
-                YY.index += 1
-            reses = []
-            cur_df2 = cur_df
-            if has_lag:
-                cur_df2 = cur_df.iloc[1:]
-                YY = YY.iloc[1:]
-            print("YYYYYYY")
-            print(YY)
-            for row in self.active_rows:
-                i = 1
-                Xlist = []
-                while (i, row) in self.equations:
-                    if self.equations[(i, row)] == "VAR":
-                        continue
-                    Xlist.append(self.equations[(i, row)])
-                    i += 1
-                curX = pd.concat([cur_df2[el] if el not in YY.columns else YY[el] for el in Xlist], axis=1)
-                print(curX)
-                print(YY[self.equations[(0, row)]])
-                res = calculate_msq(curX, YY[self.equations[(0, row)]])
-                reses.append((self.equations[(0, row)], res))
-            print("-----------------Results:-----------------\n", reses)
-            showinfo("Коэффициенты", "Были получены значения коэффициентов для каждой эндогенной переменной: "
-                     + "\n".join(map(str, reses)))
+            z = []
+            masks = []
+            y = []
 
-            reses_right = dict()
             for row in self.active_rows:
-                i = 1
-                while (i, row) in self.equations:
-                    if self.equations[(i, row)] == "VAR":
-                        continue
-                    el = self.equations[(i, row)]
-                    v = cur_df[el]
-                    x = pd.DataFrame(np.arange(1, len(v) + 1))
-                    res = calculate_msq(x, v)
-                    xc = pd.DataFrame(np.arange(1, len(v) + 6))
-                    reses_right[el] = pd.Series(
-                        np.ravel(np.dot(np.hstack((np.ones((xc.shape[0], 1)), xc)), np.matrix(res).T).T))
-                    i += 1
+                if not self.equations[(0, row)] == "VAR":
+                    y.append(cur_df[self.equations[(0, row)]])
 
             for row in self.active_rows:
                 i = 1
-                Xlist = []
+                cur_mask = [True]
+                cur_z = [np.ones(n)]
                 while (i, row) in self.equations:
-                    if self.equations[(i, row)] == "VAR":
-                        continue
-                    Xlist.append(self.equations[(i, row)])
+                    if not self.equations[(i, row)] == "VAR":
+                        cur_mask.append(self.equations[(i, row)] in used_var)
+                        cur_z.append(cur_df[self.equations[(i, row)]])
                     i += 1
-                x = pd.DataFrame()
-                for el in Xlist:
-                    x[el] = reses_right[el]
+                masks.append(cur_mask)
+                z.append(np.column_stack(cur_z))
 
-                res = [el[1] for el in reses if el[0] == self.equations[(0, row)]][0]
-                ress = pd.Series(np.ravel(np.dot(np.hstack((np.ones((x.shape[0], 1)), x)), np.matrix(res).T).T))
-                ress.index += 1
-                print("Final res: " + self.equations[(0, row)])
-                print(ress)
-                txt = "Были получены значения прогноза для переменной " + self.equations[(0, row)] + ": " + "\n".join(
-                    map(str, ress))
-                showinfo("Прогноз для переменной: " + self.equations[(0, row)],
-                         txt)
-                save_into_file(txt)
-                ress.plot()
-                plt.show()
-                plt.clf()
+            print(z)
+            print(masks)
+            print(y)
+
+            # X = cur_df[list(all_rows)]
+            # newY = pd.DataFrame()
+            # for el in list(used_var):
+            #     res = calculate_msq(X, cur_df[el])
+            #     newY[el] = pd.Series(np.ravel(np.dot(np.hstack((np.ones((X.shape[0], 1)), X)), np.matrix(res).T).T))
+            #
+            # Y_shifted = pd.DataFrame()
+            # for col in newY.columns:
+            #     Y_shifted["@" + col] = newY[[col]].shift(1)
+            # YY = pd.concat([newY, Y_shifted], axis=1)
+            # if has_lag:
+            #     YY.index += 1
+            # reses = []
+            # cur_df2 = cur_df
+            # if has_lag:
+            #     cur_df2 = cur_df.iloc[1:]
+            #     YY = YY.iloc[1:]
+            # print("YYYYYYY")
+            # print(YY)
+            # for row in self.active_rows:
+            #     i = 1
+            #     Xlist = []
+            #     while (i, row) in self.equations:
+            #         if self.equations[(i, row)] == "VAR":
+            #             continue
+            #         Xlist.append(self.equations[(i, row)])
+            #         i += 1
+            #     curX = pd.concat([cur_df2[el] if el not in YY.columns else YY[el] for el in Xlist], axis=1)
+            #     print(curX)
+            #     print(YY[self.equations[(0, row)]])
+            #     res = calculate_msq(curX, YY[self.equations[(0, row)]])
+            #     reses.append((self.equations[(0, row)], res))
+            # print("-----------------Results:-----------------\n", reses)
+            # showinfo("Коэффициенты", "Были получены значения коэффициентов для каждой эндогенной переменной: "
+            #          + "\n".join(map(str, reses)))
+            #
+            # reses_right = dict()
+            # for row in self.active_rows:
+            #     i = 1
+            #     while (i, row) in self.equations:
+            #         if self.equations[(i, row)] == "VAR":
+            #             continue
+            #         el = self.equations[(i, row)]
+            #         v = cur_df[el]
+            #         x = pd.DataFrame(np.arange(1, len(v) + 1))
+            #         res = calculate_msq(x, v)
+            #         xc = pd.DataFrame(np.arange(1, len(v) + 6))
+            #         reses_right[el] = pd.Series(
+            #             np.ravel(np.dot(np.hstack((np.ones((xc.shape[0], 1)), xc)), np.matrix(res).T).T))
+            #         i += 1
+            #
+            # for row in self.active_rows:
+            #     i = 1
+            #     Xlist = []
+            #     while (i, row) in self.equations:
+            #         if self.equations[(i, row)] == "VAR":
+            #             continue
+            #         Xlist.append(self.equations[(i, row)])
+            #         i += 1
+            #     x = pd.DataFrame()
+            #     for el in Xlist:
+            #         x[el] = reses_right[el]
+            #
+            #     res = [el[1] for el in reses if el[0] == self.equations[(0, row)]][0]
+            #     ress = pd.Series(np.ravel(np.dot(np.hstack((np.ones((x.shape[0], 1)), x)), np.matrix(res).T).T))
+            #     ress.index += 1
+            #     print("Final res: " + self.equations[(0, row)])
+            #     print(ress)
+            #     txt = "Были получены значения прогноза для переменной " + self.equations[(0, row)] + ": " + "\n".join(
+            #         map(str, ress))
+            #     showinfo("Прогноз для переменной: " + self.equations[(0, row)],
+            #              txt)
+            #     save_into_file(txt)
+            #     ress.plot()
+            #     plt.show()
+            #     plt.clf()
 
