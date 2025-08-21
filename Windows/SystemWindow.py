@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from Windows.EquationShowWindow import EquationShowWindow
 from Windows.SystemParamsShowWindow import SystemParamsShowWindow, AnswerType
 from solver import estimate_system
 from utils import calculate_msq, save_into_file
@@ -160,103 +161,63 @@ class SystemWindow:
             z = []
             masks = []
             y = []
-
+            y_titles = []
+            z_titles = []
             for row in self.active_rows:
                 if not self.equations[(0, row)] == "VAR":
-                    y.append(cur_df[self.equations[(0, row)]])
+                    y_titles.append(self.equations[(0, row)])
+                    y.append(cur_df[y_titles[-1]])
 
             for row in self.active_rows:
                 i = 1
                 cur_mask = [True]
+                cur_z_titles = [None]
                 cur_z = [np.ones(n)]
                 while (i, row) in self.equations:
                     if not self.equations[(i, row)] == "VAR":
                         cur_mask.append(self.equations[(i, row)] in used_var)
-                        cur_z.append(cur_df[self.equations[(i, row)]])
+                        cur_z_titles.append(self.equations[(i, row)])
+                        cur_z.append(cur_df[cur_z_titles[-1]])
                     i += 1
                 masks.append(cur_mask)
                 z.append(np.column_stack(cur_z))
+                z_titles.append(cur_z_titles)
+            x_matrix = np.column_stack(list(map(lambda x: cur_df[x], set([
+                self.equations[(i, row)] for (i, row) in self.equations if
+                self.equations[(i, row)] != "VAR" and self.equations[(i, row)] not in used_var
+            ]))))
+            #print(z)
+            #print(masks)
+            #print(y)
+            #print(x_matrix)
+            equations = [(y[i], z[i],masks[i]) for i in range(len(y))]
 
-            print(z)
-            print(masks)
-            print(y)
-            equations = [(y[i], z[i],masks[i]) for i in range(n)]
+            coefficients = estimate_system(equations, x_matrix, use_log_transform=False)
+            #print(coefficients)
+            equation_with_coeffs = [
+                (y_titles[i], [
+                    (z_titles[i][j], coefficients[i][0][j]) for j in range(len(z_titles[i]))
+                ]) for i in range(len(y_titles))
+            ]
+            print("-----------------equations-----------------\n", equation_with_coeffs)
 
-            coefficients = estimate_system(equations, X_matrix, use_log_transform=False)
-            # X = cur_df[list(all_rows)]
-            # newY = pd.DataFrame()
-            # for el in list(used_var):
-            #     res = calculate_msq(X, cur_df[el])
-            #     newY[el] = pd.Series(np.ravel(np.dot(np.hstack((np.ones((X.shape[0], 1)), X)), np.matrix(res).T).T))
-            #
-            # Y_shifted = pd.DataFrame()
-            # for col in newY.columns:
-            #     Y_shifted["@" + col] = newY[[col]].shift(1)
-            # YY = pd.concat([newY, Y_shifted], axis=1)
-            # if has_lag:
-            #     YY.index += 1
-            # reses = []
-            # cur_df2 = cur_df
-            # if has_lag:
-            #     cur_df2 = cur_df.iloc[1:]
-            #     YY = YY.iloc[1:]
-            # print("YYYYYYY")
-            # print(YY)
-            # for row in self.active_rows:
-            #     i = 1
-            #     Xlist = []
-            #     while (i, row) in self.equations:
-            #         if self.equations[(i, row)] == "VAR":
-            #             continue
-            #         Xlist.append(self.equations[(i, row)])
-            #         i += 1
-            #     curX = pd.concat([cur_df2[el] if el not in YY.columns else YY[el] for el in Xlist], axis=1)
-            #     print(curX)
-            #     print(YY[self.equations[(0, row)]])
-            #     res = calculate_msq(curX, YY[self.equations[(0, row)]])
-            #     reses.append((self.equations[(0, row)], res))
-            # print("-----------------Results:-----------------\n", reses)
-            # showinfo("Коэффициенты", "Были получены значения коэффициентов для каждой эндогенной переменной: "
-            #          + "\n".join(map(str, reses)))
-            #
-            # reses_right = dict()
-            # for row in self.active_rows:
-            #     i = 1
-            #     while (i, row) in self.equations:
-            #         if self.equations[(i, row)] == "VAR":
-            #             continue
-            #         el = self.equations[(i, row)]
-            #         v = cur_df[el]
-            #         x = pd.DataFrame(np.arange(1, len(v) + 1))
-            #         res = calculate_msq(x, v)
-            #         xc = pd.DataFrame(np.arange(1, len(v) + 6))
-            #         reses_right[el] = pd.Series(
-            #             np.ravel(np.dot(np.hstack((np.ones((xc.shape[0], 1)), xc)), np.matrix(res).T).T))
-            #         i += 1
-            #
-            # for row in self.active_rows:
-            #     i = 1
-            #     Xlist = []
-            #     while (i, row) in self.equations:
-            #         if self.equations[(i, row)] == "VAR":
-            #             continue
-            #         Xlist.append(self.equations[(i, row)])
-            #         i += 1
-            #     x = pd.DataFrame()
-            #     for el in Xlist:
-            #         x[el] = reses_right[el]
-            #
-            #     res = [el[1] for el in reses if el[0] == self.equations[(0, row)]][0]
-            #     ress = pd.Series(np.ravel(np.dot(np.hstack((np.ones((x.shape[0], 1)), x)), np.matrix(res).T).T))
-            #     ress.index += 1
-            #     print("Final res: " + self.equations[(0, row)])
-            #     print(ress)
-            #     txt = "Были получены значения прогноза для переменной " + self.equations[(0, row)] + ": " + "\n".join(
-            #         map(str, ress))
-            #     showinfo("Прогноз для переменной: " + self.equations[(0, row)],
-            #              txt)
-            #     save_into_file(txt)
-            #     ress.plot()
-            #     plt.show()
-            #     plt.clf()
+            reses = [
+                np.dot(z[i], coefficients[i][0]) for i in range(len(y))
+            ]
+            print("-----------------reses-----------------\n", reses)
+            res_df = pd.DataFrame()
+            for i in range(len(y_titles)):
+                res_df[y_titles[i]] = reses[i]
+                res_df[y_titles[i]+" (истинное)"] = cur_df[y_titles[i]]
+            show_window = EquationShowWindow(self.window, equation_with_coeffs,res_df)
+            show_window.show()
+
+
+
+            for i in range(len(y)):
+                res_df = pd.DataFrame({'Полученные значения':reses[i], 'Настоящие значения':y[i]})
+                res_df.plot(title=y_titles[i])
+
+            plt.show()
+
 

@@ -163,6 +163,8 @@ if __name__ == "__main__":
     ])
 
     coefficients = estimate_system(equations, X_matrix, use_log_transform=False)
+    print(coefficients)
+    print("------------------------aaaaaaa------------------------")
 
     print('\n'.join(map(str, np.dot(Z1,coefficients[0][0]))))
     print("\n\n----------sep----------\n")

@@ -118,7 +118,7 @@ class ModelVariablesWindow:
         if self.accumulated_results is None:
             self.accumulated_results = pd.DataFrame()
 
-        name = f"X_{self.col_num}" if len(selected_vars) > 1 else self.var_listbox.get(selected_vars[0])
+        name = f"X_{self.col_num}" if len(selected_vars) > 1 or self.var_listbox.get(selected_vars[0]) in self.accumulated_results else self.var_listbox.get(selected_vars[0])
         self.accumulated_results[name] = summed
         self.col_num += 1
 
